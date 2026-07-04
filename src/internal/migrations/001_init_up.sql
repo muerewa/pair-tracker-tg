@@ -1,0 +1,32 @@
+CREATE TABLE IF NOT EXISTS users (
+    id BIGINT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    streak INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS pairs (
+    id SERIAL PRIMARY KEY,
+    first_user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    second_user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT no_self_pairing CHECK (first_user_id != second_user_id)
+);
+
+CREATE TABLE IF NOT EXISTS habits (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS pair_habits (
+    pair_id INTEGER NOT NULL REFERENCES pairs(id) ON DELETE CASCADE,
+    habit_id INTEGER NOT NULL REFERENCES habits(id) ON DELETE CASCADE,
+    PRIMARY KEY (pair_id, habit_id)
+);
+
+CREATE TABLE IF NOT EXISTS habits_log (
+    id SERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    habit_id INTEGER NOT NULL REFERENCES habits(id) ON DELETE CASCADE,
+    status BOOLEAN NOT NULL DEFAULT FALSE,
+    date DATE NOT NULL DEFAULT CURRENT_DATE,
+    CONSTRAINT unique_habit_log_per_day UNIQUE (user_id, habit_id, date)
+);
