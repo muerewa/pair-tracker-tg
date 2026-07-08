@@ -1,5 +1,5 @@
 import asyncpg
-from typing import Optional
+from typing import Optional, List
 
 
 class PairRepository:
@@ -33,3 +33,9 @@ class PairRepository:
                 'first_user_id']
             pair_data['partner_id'] = partner_id
             return pair_data
+
+    async def get_all_pairs(self) -> List[dict]:
+        query = "SELECT id, first_user_id, second_user_id FROM pairs;"
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(query)
+            return [dict(row) for row in rows]

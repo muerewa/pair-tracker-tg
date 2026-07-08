@@ -9,6 +9,7 @@ class PostgresConfig:
     port: int
     name: str
     url: str
+    bot_token : str
 
 def load() -> PostgresConfig:
     env = dotenv_values(".env")
@@ -19,5 +20,6 @@ def load() -> PostgresConfig:
         host=env.get("DB_HOST", "localhost"),
         port=int(env.get("DB_PORT", 5432)),
         name=env.get("DB_NAME", "tracket"),
-        url=env.get("DATABASE_URL", "")
+        url=env.get("DATABASE_URL", ""),
+        bot_token=env.get("BOT_TOKEN", "")
     )

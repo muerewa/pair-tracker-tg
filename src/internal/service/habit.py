@@ -1,7 +1,7 @@
 from datetime import date
 from typing import List, Tuple, Dict, Any
-from ..repository.habit import HabitRepository
-from ..repository.pair import PairRepository
+from internal.repository.habit import HabitRepository
+from internal.repository.pair import PairRepository
 
 
 class HabitService:
@@ -31,5 +31,10 @@ class HabitService:
 
         return user_habits, partner_habits
 
-    async def toggle_habit(self, user_id: int, habit_id: int, target_date: date) -> bool:
-        return await self.habit_repo.toggle_habit_status(user_id, habit_id, target_date)
+    async def toggle_habit(self, user_id: int, habit_id: int, target_date: date) -> Tuple[bool, str]:
+        status = await self.habit_repo.toggle_habit_status(user_id, habit_id, target_date)
+        title = await self.habit_repo.get_habit_title(habit_id)
+        return status, title
+
+    async def get_weekly_completed_count(self, pair_id: int, user_id: int) -> int:
+        return await self.habit_repo.get_weekly_stats(pair_id, user_id)

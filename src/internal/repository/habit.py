@@ -56,3 +56,20 @@ class HabitRepository:
                         user_id, habit_id, target_date
                     )
                     return True
+
+    async def get_habit_title(self, habit_id: int) -> str:
+        query = "SELECT title FROM habits WHERE id = $1;"
+        async with self.pool.acquire() as conn:
+            return await conn.fetchval(query, habit_id)
+
+    async def get_weekly_stats(self, pair_id: int, user_id: int) -> int:
+        query = """
+            SELECT COUNT(*) 
+            FROM habits_log hl
+            JOIN pair_habits ph ON hl.habit_id = ph.habit_id
+            WHERE ph.pair_id = $1 AND hl.user_id = $2 
+            AND hl.date >= CURRENT_DATE - INTERVAL '7 days'
+            AND hl.status = TRUE;
+        """
+        async with self.pool.acquire() as conn:
+            return await conn.fetchval(query, pair_id, user_id)
