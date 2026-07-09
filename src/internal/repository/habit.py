@@ -73,3 +73,8 @@ class HabitRepository:
         """
         async with self.pool.acquire() as conn:
             return await conn.fetchval(query, pair_id, user_id)
+
+    async def delete_habit(self, habit_id: int) -> str:
+        query = "DELETE FROM habits WHERE id = $1 RETURNING title;"
+        async with self.pool.acquire() as conn:
+            return await conn.fetchval(query, habit_id)

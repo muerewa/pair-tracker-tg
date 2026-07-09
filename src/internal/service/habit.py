@@ -38,3 +38,6 @@ class HabitService:
 
     async def get_weekly_completed_count(self, pair_id: int, user_id: int) -> int:
         return await self.habit_repo.get_weekly_stats(pair_id, user_id)
+
+    async def delete_habit(self, habit_id: int) -> str:
+        return await self.habit_repo.delete_habit(habit_id)
