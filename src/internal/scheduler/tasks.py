@@ -21,23 +21,37 @@ async def evening_reminder(bot: Bot, habit_service: HabitService, pair_service: 
         if not user1_habits:
             continue
 
-        u1_all_done = all(h['is_completed'] for h in user1_habits)
-        u2_all_done = all(h['is_completed'] for h in user2_habits)
+        u1_done = [h for h in user1_habits if h['is_completed']]
+        u2_done = [h for h in user2_habits if h['is_completed']]
+
+        u1_all_done = len(u1_done) == len(user1_habits)
+        u2_all_done = len(u2_done) == len(user2_habits)
 
         if u1_all_done and u2_all_done:
-            msg = "Вы супер! Сегодня закрыты все привычки, так держать!"
+            msg = "🌟 Вы супер! Сегодня закрыты все привычки, так держать!"
             await bot.send_message(user1_id, msg)
             await bot.send_message(user2_id, msg)
-        else:
-            if not u1_all_done:
-                missing = [h['title'] for h in user1_habits if not h['is_completed']]
-                await bot.send_message(user1_id,
-                                       f"Привет! День подходит к концу, а {', '.join(missing)} еще не сделано. Удели этому 5 минут!")
+            continue
 
-            if not u2_all_done:
-                missing = [h['title'] for h in user2_habits if not h['is_completed']]
-                await bot.send_message(user2_id,
-                                       f"Привет! День подходит к концу, а {', '.join(missing)} еще не сделано. Удели этому 5 минут!")
+        if not u1_all_done:
+            missing = [h['title'] for h in user1_habits if not h['is_completed']]
+            msg = f"🌙 День подходит к концу! Остались незакрытые привычки:\n" + "\n".join(
+                missing) + "\nУдели им несколько минут"
+            if u2_all_done:
+                msg += "\n\n⭐️ Твой партнёр сегодня всё выполнил! Не отставай."
+            else:
+                msg += "\n\nУ партнёра тоже есть незакрытые задачи."
+            await bot.send_message(user1_id, msg)
+
+        if not u2_all_done:
+            missing = [h['title'] for h in user2_habits if not h['is_completed']]
+            msg = f"🌙 День подходит к концу! Остались незакрытые привычки:\n" + "\n".join(
+                missing) + "\nУдели им несколько минут"
+            if u1_all_done:
+                msg += "\n\n⭐️ Твой партнёр сегодня всё выполнил! Не отставай."
+            else:
+                msg += "\n\nУ партнёра тоже есть незакрытые задачи."
+            await bot.send_message(user2_id, msg)
 
 
 async def weekly_stats(bot: Bot, habit_service: HabitService, pair_service: PairService):
@@ -49,11 +63,28 @@ async def weekly_stats(bot: Bot, habit_service: HabitService, pair_service: Pair
         user1_id = pair['first_user_id']
         user2_id = pair['second_user_id']
 
+        u1 = await pair_service.user_repo.get_user(user1_id)
+        u2 = await pair_service.user_repo.get_user(user2_id)
+
         u1_stats = await habit_service.get_weekly_completed_count(pair_id, user1_id)
         u2_stats = await habit_service.get_weekly_completed_count(pair_id, user2_id)
 
-        msg = f"📊 Итоги недели:\n\nТвои выполненные привычки: {u1_stats}\nПривычки партнера: {u2_stats}"
-        await bot.send_message(user1_id, msg)
+        total = len(await habit_service.habit_repo.get_today_habits_with_logs(pair_id, user1_id, date.today())) * 7
 
-        msg_partner = f"📊 Итоги недели:\n\nТвои выполненные привычки: {u2_stats}\nПривычки партнера: {u1_stats}"
-        await bot.send_message(user2_id, msg_partner)
+        def build_report(current_user, partner, c_stats, p_stats):
+            report = "<b>📊 Статистика за неделю</b>\n\n"
+            report += f"<u>{current_user['name']}</u>\n✅ Выполнено: {c_stats}/{total} привычек\n🔥 Текущий стрик: {current_user['streak']} дн.\n\n"
+            report += f"<u>{partner['name']}</u>\n✅ Выполнено: {p_stats}/{total} привычек\n🔥 Текущий стрик: {partner['streak']} дн.\n\n"
+
+            if c_stats > p_stats:
+                leader = current_user['name']
+            elif p_stats > c_stats:
+                leader = partner['name']
+            else:
+                leader = "Ничья! Оба круты."
+
+            report += f"🏆 Самый активный за неделю: {leader}"
+            return report
+
+        await bot.send_message(user1_id, build_report(u1, u2, u1_stats, u2_stats), parse_mode="HTML")
+        await bot.send_message(user2_id, build_report(u2, u1, u2_stats, u1_stats), parse_mode="HTML")
