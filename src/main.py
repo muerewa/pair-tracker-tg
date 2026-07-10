@@ -3,6 +3,8 @@ import logging
 import asyncpg
 from aiogram import Bot, Dispatcher
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 
 from internal.config.config import load
 from internal.migrations.migrator import apply_migrations
@@ -49,7 +51,10 @@ async def main():
     habit_service = HabitService(habit_repo, pair_repo)
 
     bot_token = config.bot_token
-    bot = Bot(token=bot_token)
+    bot = Bot(
+        token=bot_token,
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+    )
     dp = Dispatcher()
 
     dp["user_service"] = user_service
